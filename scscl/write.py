@@ -10,42 +10,15 @@
 import sys
 import os
 
-if os.name == 'nt':
-    import msvcrt
-    def getch():
-        return msvcrt.getch().decode()
-        
-else:
-    import sys, tty, termios
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    def getch():
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
 sys.path.append("..")
-from scservo_sdk import *                 # Uses SCServo SDK library
+from scservo_sdk import *                      # Uses FTServo SDK library
 
-# Default setting
-SCS_ID                      = 1                 # SCServo ID : 1
-BAUDRATE                    = 1000000           # SCServo default baudrate : 1000000
-DEVICENAME                  = '/dev/ttyUSB0'    # Check which port is being used on your controller
-                                                # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
-SCS_MINIMUM_POSITION_VALUE  = 10          # SCServo will rotate between this value
-SCS_MAXIMUM_POSITION_VALUE  = 1000
-SCS_MOVING_SPEED            = 2400        # SCServo moving speed
-
-index = 0
-scs_goal_position = [SCS_MINIMUM_POSITION_VALUE, SCS_MAXIMUM_POSITION_VALUE]         # Goal position
 
 # Initialize PortHandler instance
 # Set the port path
 # Get methods and members of PortHandlerLinux or PortHandlerWindows
-portHandler = PortHandler(DEVICENAME)
+portHandler = PortHandler('/dev/ttyUSB0')# ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
+
 
 # Initialize PacketHandler instance
 # Get methods and members of Protocol
@@ -56,36 +29,32 @@ if portHandler.openPort():
     print("Succeeded to open the port")
 else:
     print("Failed to open the port")
-    print("Press any key to terminate...")
-    getch()
     quit()
 
-# Set port baudrate
-if portHandler.setBaudRate(BAUDRATE):
+# Set port baudrate 1000000
+if portHandler.setBaudRate(1000000):
     print("Succeeded to change the baudrate")
 else:
     print("Failed to change the baudrate")
-    print("Press any key to terminate...")
-    getch()
     quit()
 
 while 1:
-    print("Press any key to continue! (or press ESC to quit!)")
-    if getch() == chr(0x1b):
-        break
-
-    # Write SCServo goal position/moving speed/moving acc
-    scs_comm_result, scs_error = packetHandler.WritePos(SCS_ID, scs_goal_position[index], 0, SCS_MOVING_SPEED)
+    # Servo (ID1) runs at a maximum speed of V=1500*0.059=88.5rpm until it reaches position P1=1000
+    scs_comm_result, scs_error = packetHandler.WritePos(1, 1000, 0, 1500)
     if scs_comm_result != COMM_SUCCESS:
         print("%s" % packetHandler.getTxRxResult(scs_comm_result))
     if scs_error != 0:
         print("%s" % packetHandler.getRxPacketError(scs_error))
 
-    # Change goal position
-    if index == 0:
-        index = 1
-    else:
-        index = 0
+    time.sleep(((1000-20)/(1500) + 0.05))#[(P1-P0)/(V)] + 0.1
 
+    # Servo (ID1) runs at a maximum speed of V=1500*0.059=88.5rpm until it reaches position P0=20
+    scs_comm_result, scs_error = packetHandler.WritePos(1, 20, 0, 1500)
+    if scs_comm_result != COMM_SUCCESS:
+        print("%s" % packetHandler.getTxRxResult(scs_comm_result))
+    if scs_error != 0:
+        print("%s" % packetHandler.getRxPacketError(scs_error))
+
+    time.sleep(((1000-20)/(1500) + 0.05))#[(P1-P0)/(V)] + 0.1
 # Close port
 portHandler.closePort()
