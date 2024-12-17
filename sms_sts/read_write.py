@@ -9,44 +9,36 @@
 
 import sys
 import os
-
-if os.name == 'nt':
-    import msvcrt
-    def getch():
-        return msvcrt.getch().decode()
-        
-else:
-    import sys, tty, termios
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    def getch():
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+import time
 
 sys.path.append("..")
-from scservo_sdk import *                      # Uses SCServo SDK library
+from scservo_sdk import *                      # Uses FTServo SDK library
 
-# Default setting
-SCS_ID                      = 1                 # SCServo ID : 1
-BAUDRATE                    = 1000000           # SCServo default baudrate : 1000000
-DEVICENAME                  = '/dev/ttyUSB0'    # Check which port is being used on your controller
-                                                # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
-SCS_MINIMUM_POSITION_VALUE  = 0           # SCServo will rotate between this value
-SCS_MAXIMUM_POSITION_VALUE  = 4095
-SCS_MOVING_SPEED            = 2400        # SCServo moving speed
-SCS_MOVING_ACC              = 50          # SCServo moving acc
 
-index = 0
-scs_goal_position = [SCS_MINIMUM_POSITION_VALUE, SCS_MAXIMUM_POSITION_VALUE]         # Goal position
+def read():
+    while 1:
+        # Read the current position of servo(ID1)
+        scs_present_position, scs_present_speed, scs_comm_result, scs_error = packetHandler.ReadPosSpeed(1)
+        if scs_comm_result != COMM_SUCCESS:
+            print(packetHandler.getTxRxResult(scs_comm_result))
+        else:
+            print("[ID:%03d] GoalPos:%d PresPos:%d PresSpd:%d" % (SCS_ID, scs_goal_position[index], scs_present_position, scs_present_speed))
+        if scs_error != 0:
+            print(packetHandler.getRxPacketError(scs_error))
 
+        # Read moving status of servo(ID1)
+        moving, scs_comm_result, scs_error = packetHandler.ReadMoving(1)
+        if scs_comm_result != COMM_SUCCESS:
+            print(packetHandler.getTxRxResult(scs_comm_result))
+
+        if moving==0:
+            break
+    return
+        
 # Initialize PortHandler instance
 # Set the port path
 # Get methods and members of PortHandlerLinux or PortHandlerWindows
-portHandler = PortHandler(DEVICENAME)
+portHandler = PortHandler('/dev/ttyUSB0')# ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
 
 # Initialize PacketHandler instance
 # Get methods and members of Protocol
@@ -57,54 +49,34 @@ if portHandler.openPort():
     print("Succeeded to open the port")
 else:
     print("Failed to open the port")
-    print("Press any key to terminate...")
-    getch()
     quit()
 
-# Set port baudrate
-if portHandler.setBaudRate(BAUDRATE):
+# Set port baudrate 1000000
+if portHandler.setBaudRate(1000000):
     print("Succeeded to change the baudrate")
 else:
     print("Failed to change the baudrate")
-    print("Press any key to terminate...")
-    getch()
     quit()
 
 while 1:
-    print("Press any key to continue! (or press ESC to quit!)")
-    if getch() == chr(0x1b):
-        break
-
-    # Write SCServo goal position/moving speed/moving acc
-    scs_comm_result, scs_error = packetHandler.WritePosEx(SCS_ID, scs_goal_position[index], SCS_MOVING_SPEED, SCS_MOVING_ACC)
+    # Servo (ID1) runs at a maximum speed of V=60 * 0.732=43.92rpm and an acceleration of A=50 * 8.7deg/s ^ 2 until it reaches position P1=4095
+    scs_comm_result, scs_error = packetHandler.WritePosEx(1, 4095, 60, 50)
     if scs_comm_result != COMM_SUCCESS:
         print("%s" % packetHandler.getTxRxResult(scs_comm_result))
     elif scs_error != 0:
         print("%s" % packetHandler.getRxPacketError(scs_error))
 
-    while 1:
-        # Read SCServo present position
-        scs_present_position, scs_present_speed, scs_comm_result, scs_error = packetHandler.ReadPosSpeed(SCS_ID)
-        if scs_comm_result != COMM_SUCCESS:
-            print(packetHandler.getTxRxResult(scs_comm_result))
-        else:
-            print("[ID:%03d] GoalPos:%d PresPos:%d PresSpd:%d" % (SCS_ID, scs_goal_position[index], scs_present_position, scs_present_speed))
-        if scs_error != 0:
-            print(packetHandler.getRxPacketError(scs_error))
-
-        # Read SCServo moving status
-        moving, scs_comm_result, scs_error = packetHandler.ReadMoving(SCS_ID)
-        if scs_comm_result != COMM_SUCCESS:
-            print(packetHandler.getTxRxResult(scs_comm_result))
-
-        if moving==0:
-            break
-
-    # Change goal position
-    if index == 0:
-        index = 1
-    else:
-        index = 0
+    read()# Read the status of the servo (ID1) until the servo runs to the target position
+    
+    # Servo (ID1) runs at a maximum speed of V=60 * 0.732=43.92rpm and an acceleration of A=50 * 8.7deg/s ^ 2 until P0=0 position
+    scs_comm_result, scs_error = packetHandler.WritePosEx(1, 0, 60, 50)
+    if scs_comm_result != COMM_SUCCESS:
+        print("%s" % packetHandler.getTxRxResult(scs_comm_result))
+    elif scs_error != 0:
+        print("%s" % packetHandler.getRxPacketError(scs_error))
+    
+    read()# Read the status of the servo (ID1) until the servo runs to the target position
 
 # Close port
 portHandler.closePort()
+

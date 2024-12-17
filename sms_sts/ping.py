@@ -10,35 +10,14 @@
 import sys
 import os
 
-if os.name == 'nt':
-    import msvcrt
-    def getch():
-        return msvcrt.getch().decode()
-else:
-    import sys, tty, termios
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    def getch():
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
 sys.path.append("..")
-from scservo_sdk import *                   # Uses SCServo SDK library
+from scservo_sdk import *                   # Uses FTServo SDK library
 
-# Default setting
-SCS_ID                  = 1                 # SCServo ID : 1
-BAUDRATE                = 1000000           # SCServo default baudrate : 1000000
-DEVICENAME              = '/dev/ttyUSB0'    # Check which port is being used on your controller
-                                            # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
 
 # Initialize PortHandler instance
 # Set the port path
 # Get methods and members of PortHandlerLinux or PortHandlerWindows
-portHandler = PortHandler(DEVICENAME)
+portHandler = PortHandler('/dev/ttyUSB0') #ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
 
 # Initialize PacketHandler instance
 # Get methods and members of Protocol
@@ -48,27 +27,22 @@ if portHandler.openPort():
     print("Succeeded to open the port")
 else:
     print("Failed to open the port")
-    print("Press any key to terminate...")
-    getch()
     quit()
 
-
-# Set port baudrate
-if portHandler.setBaudRate(BAUDRATE):
+# Set port baudrate 1000000
+if portHandler.setBaudRate(1000000):
     print("Succeeded to change the baudrate")
 else:
     print("Failed to change the baudrate")
-    print("Press any key to terminate...")
-    getch()
     quit()
 
-# Try to ping the SCServo
+# Try to ping the ID:1 FTServo
 # Get SCServo model number
-scs_model_number, scs_comm_result, scs_error = packetHandler.ping(SCS_ID)
+scs_model_number, scs_comm_result, scs_error = packetHandler.ping(1)
 if scs_comm_result != COMM_SUCCESS:
     print("%s" % packetHandler.getTxRxResult(scs_comm_result))
 else:
-    print("[ID:%03d] ping Succeeded. SCServo model number : %d" % (SCS_ID, scs_model_number))
+    print("[ID:%03d] ping Succeeded. SCServo model number : %d" % (1, scs_model_number))
 if scs_error != 0:
     print("%s" % packetHandler.getRxPacketError(scs_error))
 
