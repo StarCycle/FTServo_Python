@@ -258,7 +258,7 @@ class protocol_packet_handler(object):
 
         txpacket = [0] * 6
 
-        if scs_id >= BROADCAST_ID:
+        if scs_id > BROADCAST_ID:
             return model_number, COMM_NOT_AVAILABLE, error
 
         txpacket[PKT_ID] = scs_id
