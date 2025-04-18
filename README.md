@@ -6,7 +6,7 @@ This is source code from [official feetech repository](https://github.com/ftserv
 root dirrectory
      |---scservo_sdk 
      |---sms_sts
-	 |---scscl
+     |---scscl
 ```
 The 'scscl' 'sms_sts' directories contain examples of using the library.
 
