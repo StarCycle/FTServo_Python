@@ -15,14 +15,14 @@ sys.path.append("..")
 from scservo_sdk import *                      # Uses FTServo SDK library
 
 
-def read():
+def read(SCS_ID):
     while 1:
         # Read the current position of servo(ID1)
         scs_present_position, scs_present_speed, scs_comm_result, scs_error = packetHandler.ReadPosSpeed(1)
         if scs_comm_result != COMM_SUCCESS:
             print(packetHandler.getTxRxResult(scs_comm_result))
         else:
-            print("[ID:%03d] GoalPos:%d PresPos:%d PresSpd:%d" % (SCS_ID, scs_goal_position[index], scs_present_position, scs_present_speed))
+            print("[ID:%03d] PresPos:%d PresSpd:%d" % (SCS_ID, scs_present_position, scs_present_speed))
         if scs_error != 0:
             print(packetHandler.getRxPacketError(scs_error))
 
@@ -66,7 +66,7 @@ while 1:
     elif scs_error != 0:
         print("%s" % packetHandler.getRxPacketError(scs_error))
 
-    read()# Read the status of the servo (ID1) until the servo runs to the target position
+    read(1)# Read the status of the servo (ID1) until the servo runs to the target position
     
     # Servo (ID1) runs at a maximum speed of V=60 * 0.732=43.92rpm and an acceleration of A=50 * 8.7deg/s ^ 2 until P0=0 position
     scs_comm_result, scs_error = packetHandler.WritePosEx(1, 0, 60, 50)
@@ -75,7 +75,7 @@ while 1:
     elif scs_error != 0:
         print("%s" % packetHandler.getRxPacketError(scs_error))
     
-    read()# Read the status of the servo (ID1) until the servo runs to the target position
+    read(1)# Read the status of the servo (ID1) until the servo runs to the target position
 
 # Close port
 portHandler.closePort()
