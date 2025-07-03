@@ -289,7 +289,7 @@ class protocol_packet_handler(object):
 
         txpacket = [0] * 8
 
-        if scs_id >= BROADCAST_ID:
+        if scs_id > BROADCAST_ID:
             return COMM_NOT_AVAILABLE
 
         txpacket[PKT_ID] = scs_id
@@ -330,7 +330,7 @@ class protocol_packet_handler(object):
         txpacket = [0] * 8
         data = []
 
-        if scs_id >= BROADCAST_ID:
+        if scs_id > BROADCAST_ID:
             return data, COMM_NOT_AVAILABLE, 0
 
         txpacket[PKT_ID] = scs_id
@@ -528,3 +528,22 @@ class protocol_packet_handler(object):
         _, result, _ = self.txRxPacket(txpacket)
 
         return result
+
+    
+    def reOfsCal(self, scs_id, position):
+        error = 0
+
+        txpacket = [0] * 8
+
+        if scs_id > BROADCAST_ID:
+            return COMM_NOT_AVAILABLE, error
+
+        txpacket[PKT_ID] = scs_id
+        txpacket[PKT_LENGTH] = 4
+        txpacket[PKT_INSTRUCTION] = INST_OFSCAL
+        txpacket[PKT_PARAMETER0] = self.scs_lobyte(position)
+        txpacket[PKT_PARAMETER0+1] = self.scs_hibyte(position)
+
+        rxpacket, result, error = self.txRxPacket(txpacket)
+
+        return result, error

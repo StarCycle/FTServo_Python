@@ -12,6 +12,7 @@ INST_REG_WRITE = 4
 INST_ACTION = 5
 INST_SYNC_WRITE = 131  # 0x83
 INST_SYNC_READ = 130  # 0x82
+INST_OFSCAL = 11  # 0x0B
 
 # Communication Result
 COMM_SUCCESS = 0  # tx or rx packet communication success
